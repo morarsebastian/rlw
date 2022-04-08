@@ -328,3 +328,84 @@ Our Box contract returns uint256 which is too large a number for JavaScript so i
 > (await box.retrieve()).toString()
 '42'
 To learn more about using the console, check out the Hardhat documentation.
+
+Interacting programmatically
+The console is useful for prototyping and running one-off queries or transactions. However, eventually you will want to interact with your contracts from your own code.
+
+In this section, we’ll see how to interact with our contracts from JavaScript, and use Hardhat to run our script with our Hardhat configuration.
+
+Keep in mind that there are many other JavaScript libraries available, and you can use whichever you like the most. Once a contract is deployed, you can interact with it through any library!
+Setup
+Let’s start coding in a new scripts/index.js file, where we’ll be writing our JavaScript code, beginning with some boilerplate, including for writing async code.
+
+// scripts/index.js
+async function main () {
+  // Our code will go here
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch(error => {
+    console.error(error);
+    process.exit(1);
+  });
+We can test our setup by asking the local node something, such as the list of enabled accounts:
+
+// Retrieve accounts from the local node
+const accounts = await ethers.provider.listAccounts();
+console.log(accounts);
+We won’t be repeating the boilerplate code on every snippet, but make sure to always code inside the main function we defined above!
+Run the code above using hardhat run, and check that you are getting a list of available accounts in response.
+
+$ npx hardhat run --network localhost ./scripts/index.js
+[
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+...
+]
+These accounts should match the ones displayed when you started the local blockchain earlier. Now that we have our first code snippet for getting data out of a blockchain, let’s start working with our contract. Remember we are adding our code inside the main function we defined above.
+
+Getting a contract instance
+In order to interact with the Box contract we deployed, we’ll use an ethers contract instance.
+
+An ethers contract instance is a JavaScript object that represents our contract on the blockchain, which we can use to interact with our contract. To attach it to our deployed contract we need to provide the contract address.
+
+// Set up an ethers contract, representing our deployed Box instance
+const address = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+const Box = await ethers.getContractFactory('Box');
+const box = await Box.attach(address);
+Make sure to replace the address with the one you got when deploying the contract, which may be different to the one shown here.
+We can now use this JavaScript object to interact with our contract.
+
+Calling the contract
+Let’s start by displaying the current value of the Box contract.
+
+We’ll need to call the read only retrieve() public method of the contract, and await the response:
+
+// Call the retrieve() function of the deployed Box contract
+const value = await box.retrieve();
+console.log('Box value is', value.toString());
+This snippet is equivalent to the query we ran earlier from the console. Now, make sure everything is running smoothly by running the script again and checking the printed value:
+
+$ npx hardhat run --network localhost ./scripts/index.js
+Box value is 42
+If you restarted your local blockchain at any point, this script may fail. Restarting clears all local blockchain state, so the Box contract instance won’t be at the expected address.
+
+If this happens, simply start the local blockchain and redeploy the Box contract.
+
+Sending a transaction
+We’ll now send a transaction to store a new value in our Box.
+
+Let’s store a value of 23 in our Box, and then use the code we had written before to display the updated value:
+
+// Send a transaction to store() a new value in the Box
+await box.store(23);
+
+// Call the retrieve() function of the deployed Box contract
+const value = await box.retrieve();
+console.log('Box value is', value.toString());
+In a real-world application, you may want to estimate the gas of your transactions, and check a gas price oracle to know the optimal values to use on every transaction.
+We can now run the snippet, and check that the box’s value is updated!
+
+$ npx hardhat run --network localhost ./scripts/index.js
+Box value is 23
